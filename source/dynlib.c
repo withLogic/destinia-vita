@@ -47,6 +47,8 @@
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
 
+#include <stdarg.h>
+
 #include "reimpl/errno.h"
 #include "reimpl/io.h"
 #include "reimpl/log.h"
@@ -56,6 +58,36 @@
 #include "reimpl/egl.h"
 #include "reimpl/time64.h"
 #include "reimpl/asset_manager.h"
+
+int __vsprintf_chk(char *dest, int flag, size_t dest_len, const char *format, va_list ap) {
+    if (dest_len == (size_t)-1) {
+        return vsprintf(dest, format, ap);
+    }
+    
+    return vsnprintf(dest, dest_len, format, ap);
+}
+
+void *__memset_chk(void *dest, int c, size_t len, size_t dest_len) {
+    if (len > dest_len) {
+        len = dest_len;
+    }
+    return memset(dest, c, len);
+}
+
+void *__memcpy_chk(void *dest, const void *src, size_t len, size_t dest_len) {
+    if (len > dest_len) {
+        len = dest_len;
+    }
+    return memcpy(dest, src, len);
+}
+
+size_t __strlen_chk(const char *s, size_t dest_len) {
+    size_t len = strlen(s);
+    if (len > dest_len) {
+        len = dest_len;
+    }
+    return len;
+}
 
 const unsigned int __page_size = PAGE_SIZE;
 
@@ -121,6 +153,8 @@ extern void *__srget;
 extern void *__stack_chk_guard;
 extern void *__swbuf;
 
+extern void *__aeabi_lmul;
+
 extern const char *BIONIC_ctype_;
 extern const short *BIONIC_tolower_tab_;
 extern const short *BIONIC_toupper_tab_;
@@ -180,6 +214,9 @@ so_default_dynlib default_dynlib[] = {
         { "__aeabi_uldivmod", (uintptr_t)&__aeabi_uldivmod },
         { "__aeabi_unwind_cpp_pr0", (uintptr_t)&__aeabi_unwind_cpp_pr0 },
         { "__aeabi_unwind_cpp_pr1", (uintptr_t)&__aeabi_unwind_cpp_pr1 },
+
+        { "__aeabi_lmul", (uintptr_t)&__aeabi_lmul },
+
         { "__atomic_cmpxchg", (uintptr_t)&__atomic_cmpxchg },
         { "__atomic_dec", (uintptr_t)&__atomic_dec },
         { "__atomic_inc", (uintptr_t)&__atomic_inc },
@@ -238,6 +275,7 @@ so_default_dynlib default_dynlib[] = {
         // Android SDK standard logging
         { "__android_log_assert", (uintptr_t)&__android_log_assert },
         { "__android_log_print", (uintptr_t)&__android_log_print },
+        //{ "__android_log_print", (uintptr_t)&ret0 },
         { "__android_log_vprint", (uintptr_t)&__android_log_vprint },
         { "__android_log_write", (uintptr_t)&__android_log_write },
 
@@ -315,6 +353,7 @@ so_default_dynlib default_dynlib[] = {
         { "tanh", (uintptr_t)&tanh },
         { "trunc", (uintptr_t)&trunc },
         { "truncf", (uintptr_t)&truncf },
+        { "labs", (uintptr_t)&labs },
 
 
         // Sockets
@@ -347,6 +386,7 @@ so_default_dynlib default_dynlib[] = {
         { "setsockopt", (uintptr_t)&setsockopt },
         { "shutdown", (uintptr_t)&shutdown },
         { "socket", (uintptr_t)&socket },
+        { "inet_addr", (uintptr_t)&ret0 },
 
 
         // Memory
@@ -356,9 +396,11 @@ so_default_dynlib default_dynlib[] = {
         { "memalign", (uintptr_t)&memalign },
         { "memcmp", (uintptr_t)&memcmp },
         { "memcpy", (uintptr_t)&sceClibMemcpy },
+        { "__memcpy_chk", (uintptr_t)&__memcpy_chk },
         { "memmem", (uintptr_t)&memmem },
         { "memmove", (uintptr_t)&memmove },
         { "memset", (uintptr_t)&memset },
+        { "__memset_chk", (uintptr_t)&__memset_chk },
         { "mmap", (uintptr_t)&mmap },
         { "__mmap2", (uintptr_t)&mmap },
         { "munmap", (uintptr_t)&munmap },
@@ -466,12 +508,14 @@ so_default_dynlib default_dynlib[] = {
 
 
         // *printf, *scanf
+        //{ "printf", (uintptr_t)&ret0 },
         { "snprintf", (uintptr_t)&snprintf },
         { "sprintf", (uintptr_t)&sprintf },
         { "vasprintf", (uintptr_t)&vasprintf },
         { "vprintf", (uintptr_t)&vprintf },
         { "vsnprintf", (uintptr_t)&vsnprintf },
         { "vsprintf", (uintptr_t)&vsprintf },
+        { "__vsprintf_chk", (uintptr_t)&__vsprintf_chk },
         { "vsscanf", (uintptr_t)&vsscanf },
         { "vswprintf", (uintptr_t)&vswprintf },
         { "printf", (uintptr_t)&sceClibPrintf },
@@ -909,19 +953,24 @@ so_default_dynlib default_dynlib[] = {
         { "memrchr", (uintptr_t)&memrchr },
         { "strcasecmp", (uintptr_t)&strcasecmp },
         { "strcat", (uintptr_t)&strcat },
+        { "__strcat_chk", (uintptr_t)&strcat },
         { "strchr", (uintptr_t)&strchr },
         { "strcmp", (uintptr_t)&strcmp },
         { "strcoll", (uintptr_t)&strcoll },
         { "strcpy", (uintptr_t)&strcpy },
+        { "__strcpy_chk", (uintptr_t)&strcpy },
         { "strcspn", (uintptr_t)&strcspn },
         { "strdup", (uintptr_t)&strdup },
         { "strlcat", (uintptr_t)&strlcat },
         { "strlcpy", (uintptr_t)&strlcpy },
         { "strlen", (uintptr_t)&strlen },
+        { "__strlen_chk", (uintptr_t)&__strlen_chk },
         { "strncasecmp", (uintptr_t)&strncasecmp },
+        { "strncat", (uintptr_t)&strncat },
         { "strncat", (uintptr_t)&strncat },
         { "strncmp", (uintptr_t)&strncmp },
         { "strncpy", (uintptr_t)&strncpy },
+        { "__strncpy_chk2", (uintptr_t)&strncpy },
         { "strnlen", (uintptr_t)&strnlen },
         { "strpbrk", (uintptr_t)&strpbrk },
         { "strrchr", (uintptr_t)&strrchr },

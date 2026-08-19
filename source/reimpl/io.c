@@ -17,6 +17,8 @@
 #include <stdarg.h>
 #include <psp2/kernel/threadmgr.h>
 
+#include <errno.h>
+
 #ifdef USE_SCELIBC_IO
 #include <libc_bridge/libc_bridge.h>
 #endif
@@ -31,23 +33,42 @@
 #include "reimpl/bits/_struct_converters.c"
 
 FILE * fopen_soloader(const char * filename, const char * mode) {
+    const char *target = filename;
+    char new_path[256];
+
+    l_warn("filename (%s)", filename);
+
     if (strcmp(filename, "/proc/cpuinfo") == 0) {
-        return fopen_soloader("app0:/cpuinfo", mode);
+        target = "app0:/cpuinfo";
     } else if (strcmp(filename, "/proc/meminfo") == 0) {
-        return fopen_soloader("app0:/meminfo", mode);
+        target = "app0:/meminfo";
+    // look, i know there is likely a better way to do this, but this works.
+    } else if (strstr(filename, "msave.dat")) {
+       snprintf(new_path, sizeof(new_path), "%s/msave.dat", DATA_PATH);
+       target = new_path;
+    } else if (strstr(filename, "save0.dat")) {
+       snprintf(new_path, sizeof(new_path), "%s/save0.dat", DATA_PATH);
+       target = new_path;
+    } else if (strstr(filename, "save1.dat")) {
+       snprintf(new_path, sizeof(new_path), "%s/save1.dat", DATA_PATH);
+       target = new_path;
+    } else if (strstr(filename, "save2.dat")) {
+       snprintf(new_path, sizeof(new_path), "%s/save2.dat", DATA_PATH);
+       target = new_path;
     }
 
+    if (target != filename)
+        printf("Redirecting %s to %s\n", filename, target);
+
 #ifdef USE_SCELIBC_IO
-    FILE* ret = sceLibcBridge_fopen(filename, mode);
+    FILE* ret = sceLibcBridge_fopen(target, mode);
 #else
-    FILE* ret = fopen(filename, mode);
+    FILE* ret = fopen(target, mode);
 #endif
-
     if (ret)
-        l_debug("fopen(%s, %s): %p", filename, mode, ret);
+        l_debug("fopen(%s, %s): %p", target, mode, ret);
     else
-        l_warn("fopen(%s, %s): %p", filename, mode, ret);
-
+        l_warn("fopen(%s, %s): %p", target, mode, ret);
     return ret;
 }
 
@@ -90,18 +111,27 @@ int fstat_soloader(int fd, stat64_bionic * buf) {
 }
 
 int stat_soloader(const char * path, stat64_bionic * buf) {
+    char new_path[256];
+
     if (strcmp(path, "/system/lib/libOpenSLES.so") == 0) {
         l_debug("stat(%s): returning 0 in case this is a check for OpenSLES support", path);
         return 0;
     }
 
+    if(strstr(path, "Save")){
+        snprintf(new_path, sizeof(new_path), "%s%s", "ux0:/data/destinia", path + 1);
+    } else {
+        snprintf(new_path, sizeof(new_path), "%s", path);
+    }
+
     struct stat st;
-    int res = stat(path, &st);
+    int res = stat(new_path, &st);
 
-    if (res == 0)
+    if (res == 0) {
         stat_newlib_to_bionic(&st, buf);
+    }
 
-    l_debug("stat(%s): %i", path, res);
+    l_debug("stat(%s): %i", new_path, res);
     return res;
 }
 

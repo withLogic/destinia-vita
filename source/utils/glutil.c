@@ -37,7 +37,8 @@ void gl_preload() {
 }
 
 void gl_init() {
-    vglInitExtended(0, 960, 544, 6 * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
+    //vglInitExtended(0, 960, 544, 6 * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
+    vglInitExtended(2 * 1024 * 1024, 960, 544, 6 * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
 }
 
 void gl_swap() {
@@ -248,3 +249,43 @@ void load_shader(GLuint shader, const char * string, size_t length) {
 #else
 #error "Define one of (USE_GLSL_SHADERS, USE_CG_SHADERS, USE_GXP_SHADERS)"
 #endif
+
+static GLuint screenTexture;
+static int screenW, screenH;
+
+void gl_init_screen_texture(int width, int height) {
+    screenW = width;
+    screenH = height;
+
+    glGenTextures(1, &screenTexture);
+    glBindTexture(GL_TEXTURE_2D, screenTexture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // Allocate storage once; later frames use TexSubImage to update it
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
+                 GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL);
+}
+
+void gl_present_framebuffer(const void *pixels) {
+    glBindTexture(GL_TEXTURE_2D, screenTexture);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, screenW, screenH,
+                     GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, 960, 544, 0, -1, 1);   // Vita screen, Y-flipped for texture space
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    glEnable(GL_TEXTURE_2D);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(0,   0);
+        glTexCoord2f(1, 0); glVertex2f(960, 0);
+        glTexCoord2f(1, 1); glVertex2f(960, 544);
+        glTexCoord2f(0, 1); glVertex2f(0,   544);
+    glEnd();
+}

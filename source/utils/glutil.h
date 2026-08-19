@@ -32,6 +32,9 @@ void glCompileShader_soloader(GLuint shader);
 void glShaderSource_soloader(GLuint shader, GLsizei count,
                              const GLchar **string, const GLint *_length);
 
+void gl_init_screen_texture(int width, int height);
+void gl_present_framebuffer(const void *pixels);
+
 #ifdef __cplusplus
 };
 #endif
