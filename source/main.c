@@ -163,7 +163,11 @@ void controls_handler_key(int32_t keycode, ControlsAction action) {
                 if(gameState == 1){
                     MC_mKeyPressed(12);
                 } else if(gameState == 2){
-                    controls_handler_touch(0, 911.5, 225.0, CONTROLS_ACTION_DOWN);
+                    if(settings_highres){
+                        controls_handler_touch(0, 947.0, 291.0, CONTROLS_ACTION_DOWN);
+                    } else {
+                        controls_handler_touch(0, 911.5, 225.0, CONTROLS_ACTION_DOWN);
+                    }
                 }
                 break;
         }
@@ -225,13 +229,6 @@ void controls_handler_key(int32_t keycode, ControlsAction action) {
                     MC_mKeyReleased(1);
                 } else if(gameState == 2){
                     GC_mKeyReleased(1);
-                }
-                break;
-            case AKEYCODE_BUTTON_R1:
-                if(gameState == 1){
-                    MC_mKeyReleased(12);
-                } else if(gameState == 2){
-                    GC_mKeyReleased(12);
                 }
                 break;
         }
