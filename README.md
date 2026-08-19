@@ -69,4 +69,3 @@ cmake .. && make
 - [Rinnegatamante](https://github.com/Rinnegatamante/) for VitaGL and other help with various Vita-related things
 - [gl33ntwine](https://github.com/v-atamanenko/) for the awesome Android subsystem reimplementation FalsoNDK and FalsoJNI.
 - [Rocroverss](https://github.com/Rocroverss) for the Livearea assets.
-- Ill-Hovercraft8548 for the Zenonia 2 Remaster
