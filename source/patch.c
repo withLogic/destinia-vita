@@ -28,6 +28,7 @@ static so_hook LogoCanvas_init_hook;
 static so_hook MenuCanvas_init_hook;
 static so_hook GameCanvas_init_hook;
 static so_hook GameUI_searchBag_hook;
+static so_hook Comm_buyCash_hook;
 
 int hudItems[] = {
         -1744355708, 
@@ -92,6 +93,10 @@ int GameUI_searchBag_patched(int param1, int param2){
     return SO_CONTINUE(int, GameUI_searchBag_hook, param1, param2);
 }
 
+void Comm_buyCash_patched(){
+    l_debug("[Comm_buyCash]");
+}
+
 void so_patch(void) {
     Grp_drawWPNImage_hook = hook_addr((uintptr_t)so_symbol(&so_mod, "Grp_drawWPNImage"),
         (uintptr_t)&Grp_drawWPNImage_patched);
@@ -113,4 +118,7 @@ void so_patch(void) {
 
     drawAGDImageT_hook = hook_addr((uintptr_t)so_symbol(&so_mod, "drawAGDImageT"),
         (uintptr_t)&drawAGDImageT_patched);
+
+    Comm_buyCash_hook = hook_addr((uintptr_t)so_symbol(&so_mod, "Comm_buyCash"),
+        (uintptr_t)&Comm_buyCash_patched);
 }

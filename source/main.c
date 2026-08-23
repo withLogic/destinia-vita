@@ -2,6 +2,7 @@
 #include "utils/glutil.h"
 
 #include <psp2/kernel/threadmgr.h>
+#include <psp2/kernel/processmgr.h>
 
 #include <falso_jni/FalsoJNI.h>
 #include <so_util/so_util.h>
@@ -39,6 +40,7 @@ typedef enum {
 static virtual_buttons current_dpad_direction = DPAD_NONE;
 
 int gameState = 0; //0 = logo, 1 = menu, 2 = game
+int fastForward = 0;
 
 void (*jniTouch)(void*, int, int, int, int);
 
@@ -47,6 +49,9 @@ void (*GC_mKeyReleased)(int);
 void (*MC_mKeyPressed)(int);
 void (*MC_mKeyReleased)(int);
 void (*LC_mKeyPressed)(int);
+
+int (*getMyCash)(void);
+void (*setMyCash)(int);
 
 int main() {
     soloader_init_all();
@@ -58,9 +63,12 @@ int main() {
 
     size_t framebuffer_size = gameWidth * gameHeight * 2;
     jbyteArray screenBuf = jni->NewByteArray(jni, framebuffer_size);
+    int frameCount = 0;
 
     void (*initGame)(void*, void*, int, int, int, int, int, int, char) = (void *)so_symbol(&so_mod, "Java_game_destiniaeng_GameThread_initGame");
-    void (*jniRun)(void*, int, int) = (void *)so_symbol(&so_mod, "Java_game_destiniaeng_GameThread_jniRun");
+    int (*jniRun)(void*, int, int, int) = (void *)so_symbol(&so_mod, "Java_game_destiniaeng_GameThread_jniRun");
+    getMyCash = (void *)so_symbol(&so_mod, "getMyCash");
+    setMyCash = (void *)so_symbol(&so_mod, "setMyCash");
 
     jniTouch = (void *)so_symbol(&so_mod, "Java_game_destiniaeng_GameThread_jniTouch");
     GC_mKeyPressed = (void *)so_symbol(&so_mod, "GameCanvas_mKeyPressed");
@@ -87,14 +95,26 @@ int main() {
     while (1) {
         controls_poll();
 
-        jniRun(&jni, 0, screenBuf);
+        uint64_t frameStart = sceKernelGetProcessTimeWide();
+
+        int frameDelay = jniRun(&jni, 0, screenBuf, frameCount++);
 
         jbyte *pixels = jni->GetByteArrayElements(&jni, screenBuf, NULL);
         gl_present_framebuffer(pixels);
         jni->ReleaseByteArrayElements(&jni, screenBuf, pixels, JNI_ABORT);
 
         gl_swap();
-}
+
+        uint64_t elapsedUs = sceKernelGetProcessTimeWide() - frameStart;
+        uint64_t targetUs = (uint64_t)frameDelay * 1000;
+
+        if(gameState == 2 && fastForward == 0){
+            if (elapsedUs < targetUs) {
+                sceKernelDelayThread((SceUInt)(targetUs - elapsedUs));
+            }
+        }
+    }
+
     sceKernelExitDeleteThread(0);
 }
 
@@ -159,6 +179,13 @@ void controls_handler_key(int32_t keycode, ControlsAction action) {
                     GC_mKeyPressed(1);
                 }
                 break;
+            case AKEYCODE_BUTTON_SELECT:
+                if(gameState == 2){
+                    setMyCash(200);
+                    int myCash = getMyCash();
+                    l_debug("My Cash Value %d", myCash);
+                }
+                break;
             case AKEYCODE_BUTTON_R1:
                 if(gameState == 1){
                     MC_mKeyPressed(12);
@@ -168,6 +195,11 @@ void controls_handler_key(int32_t keycode, ControlsAction action) {
                     } else {
                         controls_handler_touch(0, 911.5, 225.0, CONTROLS_ACTION_DOWN);
                     }
+                }
+                break;
+            case AKEYCODE_BUTTON_L1:
+                if(gameState == 2){
+                    fastForward = 1;
                 }
                 break;
         }
@@ -229,6 +261,11 @@ void controls_handler_key(int32_t keycode, ControlsAction action) {
                     MC_mKeyReleased(1);
                 } else if(gameState == 2){
                     GC_mKeyReleased(1);
+                }
+                break;
+            case AKEYCODE_BUTTON_L1:
+                if(gameState == 2){
+                    fastForward = 0;
                 }
                 break;
         }
