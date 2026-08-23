@@ -179,13 +179,6 @@ void controls_handler_key(int32_t keycode, ControlsAction action) {
                     GC_mKeyPressed(1);
                 }
                 break;
-            case AKEYCODE_BUTTON_SELECT:
-                if(gameState == 2){
-                    setMyCash(200);
-                    int myCash = getMyCash();
-                    l_debug("My Cash Value %d", myCash);
-                }
-                break;
             case AKEYCODE_BUTTON_R1:
                 if(gameState == 1){
                     MC_mKeyPressed(12);

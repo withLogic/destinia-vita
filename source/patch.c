@@ -19,6 +19,8 @@
 
 extern so_module so_mod;
 extern gameState;
+extern int (*getMyCash)(void);
+extern void (*setMyCash)(int);
 
 static so_hook Grp_drawWPNImage_hook;
 static so_hook Grp_drawWPNImage2_hook;
@@ -94,7 +96,10 @@ int GameUI_searchBag_patched(int param1, int param2){
 }
 
 void Comm_buyCash_patched(){
-    l_debug("[Comm_buyCash]");
+    int currentCash = getMyCash();
+    if(currentCash < 170000){
+        setMyCash(currentCash + 1000);
+    }
 }
 
 void so_patch(void) {
