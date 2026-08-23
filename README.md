@@ -23,11 +23,18 @@ By doing so, it's basically as if we emulate a minimalist Android environment in
 - Directional Pad: Move
 - Cross: Attack / Select option in menu
 - Triangle: Menu
+- L Trigger: Fast Forward
 - R Trigger: Rotate skill bar
 - Right Analog: Use Skills 1-4
 - Circle: Use Skill 5
 
 ## Changelog
+### v.0.1.1
+
+- Game was not honoring the framelimiter and was running too fast. The game now will run at either 10fps or 17fps depending on the settings in the Options menu. The menu menu will still run at 30fps.
+- Added Fast Forward option to bypass the framelimiter. This can be activated by using the L trigger.
+- Fixed bug where selecting a Buy Cash with Real Money option in the Special Shop opened a network prompt that never completed. Now the game will give the player 1,000 Cash instead.
+
 ### v.0.1
 
 - Initial Release.
