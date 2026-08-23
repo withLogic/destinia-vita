@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "utils/init.h"
 #include "utils/glutil.h"
 
@@ -20,6 +21,7 @@ int sceLibcHeapSize = 4 * 1024 * 1024;
 extern JNIEnv jni; 
 so_module so_mod;
 
+extern void settings_save();
 extern int settings_capframerate;
 extern int settings_highres;
 
@@ -80,6 +82,11 @@ int main() {
     LC_mKeyPressed = (void *)so_symbol(&so_mod, "LogoCanvas_mKeyPressed");
 
     initGame(&jni, NULL, 0, 0, 0, 0, gameWidth, gameHeight, 0);
+
+    FILE *configFile = fopen(DATA_PATH "config.txt", "r");
+    if(!configFile){
+        settings_save();
+    }
 
     audio_init();    
     gl_init();
